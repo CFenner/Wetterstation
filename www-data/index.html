@@ -1,0 +1,178 @@
+<html>
+<head>
+<script src="Chart.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.17.1/moment.min.js"></script>
+<style type="text/css">
+small {
+	font-size: 10px;
+}
+</style>
+<script type="text/javascript">
+    $(function() {
+        var ctx = document.getElementById("anemochart");
+        var myChart = new Chart(ctx, {
+            type : 'line',
+            data : {
+                datasets : [ {
+                    label : 'Wind km/h',
+                } ]
+            },
+            options : {
+                scales : {
+                    yAxes : [ {
+                        ticks : {
+                            beginAtZero : true,
+                            suggestedMax : 40
+
+                        }
+                    } ],
+                    xAxes : [ {
+                        type : 'time',
+                    /* time : {
+                        unit : 'minute'
+                    } */
+                    } ]
+                }
+            }
+        });
+
+        function dataLoaded(data) {
+            var lines = data.split("\n")
+
+            var data = []
+            for (var i = 0; i < lines.length; i++) {
+                var rowData = lines[i].split(",")
+                data.push({
+                    x : moment(parseInt(rowData[0])),
+                    y : parseFloat(rowData[1]).toFixed(2)
+                })
+            }
+
+            myChart.data.datasets[0].data = data;
+            myChart.update();
+
+        }
+
+        function loadData() {
+            $.get('/rest/anemometer?t=' + $('#time').val(), dataLoaded)
+        }
+
+        loadData()
+        setInterval(loadData, 5000)
+
+    });
+
+    if ("WebSocket" in window) {
+        console.log("WebSocket is supported by your Browser!");
+
+        // Let us open a web socket
+        var ws = new WebSocket("ws://" + location.host + "/socket/anemonow");
+
+        function sendMsg() {
+            ws.send("")
+        }
+
+        ws.onopen = function(event) {
+            // Web Socket is connected, send data using send()
+            //ws.send("Message to send");
+
+            setInterval(sendMsg, 1000);
+            ws.send("hello")
+            console.log("ws now open ", event);
+        };
+
+        var DIR_TO_MSG = {
+            "0.0" : "N",
+            "22.5" : "NNE",
+            "45.0" : "NE",
+            "67.5" : "NEE",
+            "90.0" : "E",
+            "112.5" : "SEE",
+            "135.0" : "SE",
+            "157.5" : "SSE",
+            "180.0" : "S",
+            "202.5" : "SSW",
+            "225.0" : "SW",
+            "247.5" : "SWW",
+            "270.0" : "W",
+            "292.5" : "WNW",
+            "315.0" : "NW",
+            "337.5" : "NNW"
+        }
+        ws.onmessage = function(evt) {
+            //var received_msg = evt.data;
+            console.log("ws: ", evt.data)
+            var lines = evt.data.split("\n")
+            for (var i = 0; i < lines.length; i++) {
+                var cols = lines[i].split(',');
+                var sensor = cols[0];
+                var date = new Date(parseInt(cols[1]));
+                var value = cols[2];
+
+                switch (sensor) {
+                case "ANEMO":
+                    $("#currentWind").html(
+                            parseFloat(value).toFixed(2) + " km/h");
+                    $("#currentWindLastUpdate").html(date.toString())
+                    break;
+                case "WINDDIR":
+                    var wdir = DIR_TO_MSG[parseFloat(value).toFixed(1)
+                            .toString()]
+                    if (wdir == undefined) {
+                        wdir = "?";
+                    }
+
+                    $("#currentWindDirection").html(value + "° (" + wdir + ")");
+                    $("#currentWindDirectionLastUpdate").html(date.toString())
+                    break;
+                case "TEMP":
+                    $("#currentTemperature").html(parseFloat(value).toFixed(1) + "°");
+                    $("#currentTemperatureLastUpdate").html(date.toString());
+                    break;
+                }
+            }
+
+            return true;
+        };
+
+        ws.onclose = function(event) {
+            // websocket is closed.
+            console.log("Connection is closed...", event);
+        };
+    }
+
+    else {
+        // The browser doesn't support WebSocket
+        alert("WebSocket NOT supported by your Browser!");
+    }
+</script>
+</head>
+<body>
+
+    <h2>
+        Wind! <span id="currentWind">N/A</span><small id="currentWindLastUpdate"></small>
+    </h2>
+    <h2>
+        Wind direction! <span id="currentWindDirection">N/A</span><small id="currentWindDirectionLastUpdate"></small>
+    </h2>
+    
+    <h2>
+        Temperature! <span id="currentTemperature">N/A</span><small id="currentTemperatureLastUpdate"></small>
+    </h2>
+
+    <select id="time">
+        <option value="5">5 Minutes</option>
+        <option value="15">15 Minutes</option>
+        <option value="180">3 Hours</option>
+        <option value="1440">1 Day</option>
+        <option value="10080">1 Week</option>
+
+    </select>
+
+    <div style="width: 800px; height: 600px;">
+        <canvas id="anemochart" width="400" height="400"></canvas>
+    </div>
+
+</body>
+</html>
