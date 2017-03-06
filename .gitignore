@@ -1,0 +1,9 @@
+/.gradle/
+/bin/
+/build/
+/.project
+/.classpath
+/anemo.db
+/backup.db
+/test-output/
+/.settings
