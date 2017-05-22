@@ -18,9 +18,28 @@ Das Projekt befindet sich noch in der Entwicklung, an dieser Stelle nur ein paar
  
 ## Raspberry PI Setup
 
-### NFS Freigabe einrichten 
+### Raspian auf SD Karte installieren
 
-(10.1.0.10 ist der Zielrechner)
+ - Raspian runterladen von: https://www.raspberrypi.org/downloads/raspbian/
+ - `pv` installieren um dd Fortschritt anzuzeigen: `sudo apt-get install pv`
+ - Auf SD Karte installieren mit `unzip -p 2017-04-10-raspbian-jessie-lite.zip | pv | sudo dd of=/dev/sda bs=4096` (ZIP-Dateiname und Device entsprechend anpassen natürlich!)
+ - die /boot Partition mounten und:
+ - mit `touch ssh` ssh aktivieren und mit
+ - `wpa_passphrase SSID passphrase > wpa_supplicant.conf` das WLAN konfigurieren
+ - SSD Karte in den PI einlegen und booten
+
+### Pakete aktualisieren
+ - `sudo apt-get update && sudo apt-get upgrade`
+ 
+### raspi-config
+ - `sudo raspi-config` ausführen
+ - Hostname anpassen auf `whwpi`
+ - Passwort ändern
+ - Bei Localisation Options "de_DE@UTF8" aktivieren und de also default system locale wählen
+
+### NFS Freigabe für Entwicklung einrichten
+
+Für die Entwicklung habe ich die Files lokal auf meinem Entwicklungsrechner liegen und mounte sie per NFS vom PI:
 
 ```
 mkdir /var/anemo
@@ -30,6 +49,8 @@ echo "/var/anemo 10.1.0.10(rw,sync,no_subtree_check,no_root_squash)" | sudo tee 
 sudo service nfs-kernel-server restart
 ```
 
+(10.1.0.10 ist der Entwicklungsrechner)
+
 Hinweis: Raspbian scheint timing issues zu haben und portmap und nfs-kernel-server nicht in der richtigen Reihenfolge zu starten. Manchmal muss man `sudo service nfs-kernel-server restart` nach dem Booten des PIs manuell ausführen, damit die NFS Shares erreichbar sind.
 
 ### i2c
@@ -37,6 +58,12 @@ Hinweis: Raspbian scheint timing issues zu haben und portmap und nfs-kernel-serv
 
 #### configure: 
 https://learn.adafruit.com/adafruits-raspberry-pi-lesson-4-gpio-setup/configuring-i2c
+
+Kurzfassung:
+ - `sudo raspi-config`
+ - "Interface Options"
+ - Enable I2C
+ - Reboot
 
 #### test:
 `sudo i2cdetect -y 1`
