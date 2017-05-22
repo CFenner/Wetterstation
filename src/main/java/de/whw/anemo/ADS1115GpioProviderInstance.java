@@ -52,7 +52,7 @@ public class ADS1115GpioProviderInstance {
             //
             // PGA value PGA_4_096V is a 1:1 scaled input,
             // so the output values are in direct proportion to the detected voltage on the input pins
-            instance.setProgrammableGainAmplifier(ProgrammableGainAmplifierValue.PGA_4_096V, ADS1115Pin.ALL);
+            instance.setProgrammableGainAmplifier(ProgrammableGainAmplifierValue.PGA_6_144V, ADS1115Pin.ALL);
 
             // Define a threshold value for each pin for analog value change events to be raised.
             // It is important to set this threshold high enough so that you don't overwhelm your program with change events for insignificant changes
